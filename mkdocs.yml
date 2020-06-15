@@ -1,0 +1,48 @@
+site_name: Alarm wiki
+repo_url: https://github.com/cheperboy/home_alarm/
+docs_dir: docs/
+# dev_addr: 0.0.0.0:8001 # commented because fail compilation in production(readthedocs)
+
+# theme: readthedocs
+theme:
+  name: 'material'
+  language: 'en'
+  palette:
+    primary: 'teal'
+    accent: 'teal'
+    # primary: 'indigo'
+    # accent: 'indigo'
+  font:
+    text: 'Roboto'
+    code: 'Roboto Mono'
+
+
+nav:
+    - Home: index.md
+    - Nox Alarm: system_nox.md
+    - Server Config: server_config.md
+    - UniPi / Evok / Wiring: unipi_evok.md
+    - Dev workflow: dev_workflow.md
+    - Software: software.md
+
+
+# plugins:
+  # - markdownmermaid
+# extra_javascript:
+  # - https://unpkg.com/mermaid@7.1.2/dist/mermaid.min.js
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.inlinehilite
+  - pymdownx.magiclink
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences
+
+extra_css:
+  - https://unpkg.com/mermaid@7.1.2/dist/mermaid.css
+extra_javascript:
+  - https://unpkg.com/mermaid@7.1.2/dist/mermaid.min.js

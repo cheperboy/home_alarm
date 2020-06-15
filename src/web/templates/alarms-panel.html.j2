@@ -1,0 +1,9 @@
+{% extends "index.html.j2" %}
+
+{% block content %}
+	{% include "_nox-panel.html.j2" %}
+	{% if config.PANEL_EXT %}
+		{% include "_ext-panel.html.j2" %}
+  {% endif %}
+
+{% endblock %}

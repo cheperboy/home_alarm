@@ -1,0 +1,67 @@
+	
+
+
+	<section class="simple-panel py-5">
+		<div class="container">
+			<div class="row">
+				<!-- Card Action -->
+				<div class="col-lg-3">
+					<div class="card mb-5 mb-lg-0">
+						<div class="card-body">
+							<h6 class="card-mytitle text-center text-muted">Nox</h6>
+							<hr>
+							<!-- Status content -->
+							<h6 class="card-mytitle text-center">
+								<span id="div_alarm_state_on_nox" class="badge badge-primary">ON</span>
+								<span id="div_alarm_state_off_nox" class="badge badge-success">OFF</span>
+								<span id="div_alarm_state_alert_nox" class="badge badge-danger">ALERT</span>
+								<span id="div_alarm_state_was_alert_nox" class="badge badge-warning">Was Alert</span>
+							</h6>
+							<hr>
+							{% if current_user.is_authenticated %}
+								<button id="btn_start_alarm_nox" type="button" class="btn btn-block btn-primary text-uppercase style_display_none" >
+									<span id="btn_start_alarm_spinner_nox" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+									Start
+								</button>
+								{# <button id="btn_stop_alarm_nox" type="button" class="btn btn-block btn-success text-uppercase" style="display:none;"> #}
+								<button id="btn_stop_alarm_nox" type="button" class="btn btn-block btn-success text-uppercase style_display_none">
+									<span id="btn_stop_alarm_spinner_nox" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+									Stop
+								</button>
+							{% else %}
+								<a class="btn btn-block btn-info text-uppercase" href="{{ url_for('login.index') }}">Log in</a>
+							{% endif %}
+						</div>
+					</div>
+				</div>
+				
+				<!-- Card Status and Log-->
+				<div class="col-lg-9">
+					<div class="card mb-5 mb-lg-0">
+						<div class="card-body">
+							<!-- Log content -->
+							<h6 class="card-mytitle text-center text-muted">Log</h6>
+							<table class="table table-striped table-condensed table-sm">
+									<thead>
+									<tr>
+										<th>User</th>
+										<th>Date</th>
+										<th>Action</th>         
+									</tr>
+								</thead>
+								<tbody id="div_alarm_events_nox">
+									{% for event in nox_events %}
+									<tr>
+										<td>{{ event.user }}</td>
+										<td>{{ event.dt.strftime('%d/%m %H:%M') }}</td>
+										<td><span class="badge badge-{{ event.badge }}">{{ event.message }}</span></td>
+									</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>

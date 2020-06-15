@@ -1,0 +1,17 @@
+{	
+    "in_alert":  
+	{ 
+		"name": "in_alert",  
+		"circuit": 3,  
+		"inverse": false,  
+		"comment": "in_alert"
+	},
+    
+	"out_serene": 
+	{ 
+		"name": "out_serene",  
+		"circuit": 2, 
+		"impulse": false,
+		"comment": "out_serene"   
+	}
+}

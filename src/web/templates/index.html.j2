@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	{% include "_header.html.j2" %}
+	<link href="{{ url_for('static', filename='css/common.css') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='css/panel.css') }}" rel="stylesheet">
+	<link href="{{ url_for('static', filename='css/login.css') }}" rel="stylesheet">
+</head>
+
+<body>
+
+	{% include "_navbar.html.j2" %}
+
+	<div class="main container-fluid">
+		{% block content %}
+		{% endblock %}
+	</div>
+	
+	<script nonce="{{ csp_nonce() }}" type="text/javascript">
+		// Those parameters are :
+		//	- set in flask view
+		//  - copied in a JS variable to be accessible to javascript
+		var config_panel_ext = "{{ config['PANEL_EXT']|tojson }}";
+		var config_panel_nox = "{{ config['PANEL_NOX']|tojson }}";
+	 </script>
+
+</body>
+</html>

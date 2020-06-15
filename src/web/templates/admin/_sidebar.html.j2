@@ -1,0 +1,19 @@
+<div class="sidebar-sticky">
+	
+	<h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">Alarm</h6>
+	<ul class="nav flex-column">
+		{% for page in pages_alarm %}
+			{% if page == current_page %}
+				{% set active = 'active' %}
+			{% endif %} 
+			{% set url = 'admin.'+page %}
+			<li class="nav-item"><a class="nav-link {{ active }}" href="{{ url_for(url) }}">{{ page }}</a></li>
+		{% endfor %}
+	</ul>
+	
+	<h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">System</h6>
+	<ul class="nav flex-column mb-2">
+			<li class="nav-item"><a class="nav-link" href="#">system</a></li>
+	</ul>
+
+</div>

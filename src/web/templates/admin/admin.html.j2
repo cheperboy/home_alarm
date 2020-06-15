@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+	{% include "_header.html.j2" %}
+	<link href="{{ url_for('static', filename='css/admin.css') }}" rel="stylesheet">
+	
+</head>
+
+  <body>
+		{% include "_navbar.html.j2" %}
+
+
+		<div class="container-fluid">
+			<div class="row">
+				<nav class="col-md-2 d-none d-md-block bg-light sidebar">
+					{% include "admin/_sidebar.html.j2" %}
+				</nav>
+
+				<div class="main col-md-10 ml-sm-auto col-lg-10 px-4">
+					<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+						<h1 class="h2">Admin</h1>
+
+						<div class="dropdown btn-toolbar mb-2 mb-md-0">
+							<button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+								Menu Admin
+							</button>
+							<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+								{% for page in pages_alarm %}
+									{% if page == current_page %}
+										{% set active = 'active' %}
+									{% endif %}
+									{% set url = 'admin.'+page %}
+									<a class="dropdown-item {{ active }}" href="{{ url_for(url) }}">{{ page }}</a>
+								{% endfor %}
+							</div>
+						</div>
+
+					</div>
+
+					{% block content %}
+					{% endblock %}
+
+				</div>
+			</div>
+		</div>
+
+</body>
+</html>
