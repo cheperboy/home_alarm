@@ -65,7 +65,8 @@ class UnipiOutput():
         self.name    = str(json_config['name'])
         self.circuit = str(json_config['circuit'])
         self.impulse = json_config['impulse']  # impulse => output is always low and goes high during 0,7s output is activate.
-        self.value   = self.read()  # 0 or 1
+        self.value   = None  # 0 or 1
+        self.read()
 
     def read(self):
         """

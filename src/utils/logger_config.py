@@ -130,6 +130,11 @@ flask_logger_settings = {
             'handlers': ['stdout', 'file_info', 'file_err'],
             'propagate': False   # don't duplicate to root logger
         },
+        'extalarm': {
+            'level': 'DEBUG',
+            'handlers': ['stdout', 'file_info', 'file_err'],
+            'propagate': False   # don't duplicate to root logger
+        },
         'engineio': {
             'level': 'DEBUG',
             'handlers': ['stdout', 'file_debug'],
