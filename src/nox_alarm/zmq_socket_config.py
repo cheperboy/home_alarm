@@ -7,7 +7,7 @@ Principle:
     the PUBlisher will send a string "TOPIC_ID ' ' COMMAND_ID" (see example below)
     self.PUB_COMMAND.send_string(zmq_socket_config.TOPIC_REQUEST + " " + zmq_socket_config.COMMAND_STOP)
 """
-
+ 
 import sys
 from os.path import abspath as abspath
 from os.path import dirname as dirname

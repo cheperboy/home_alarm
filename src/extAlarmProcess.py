@@ -45,7 +45,7 @@ UNIPI_IO_CONFIG = join(conf_path, 'software', 'nox_unipi_io.json')
 #DEBUG = None
 DEBUG = True
 
-BIND_TO_NOX = None # None / True. bind start/stop to NoxAlarm status
+BIND_TO_NOX = True # None / True. bind start/stop to NoxAlarm status
 
 class ExtAlarm(object):
     """ La class ExtAlarm est une machine à état qui vérifie l'état dedes détecteurs.
@@ -63,13 +63,16 @@ class ExtAlarm(object):
     states = ['init' , 'off'     , 'on'      , 'alert'     ]
     colors = ['info' , 'success' , 'primary' , 'warning'   , 'primary']
     events = ['init' , 'stop'    , 'start'   , 'detection' , 'serene_stop']
-    ALERT_DELAY = 10 # Delay for alert timer
+    DELAY_ALERT = 60*4 # Delay for alert timer (in ~second)
+    DELAY_FLASH_GARAGE = 60*4 # Delay for alert timer (in ~second)
 
     name        = 'Ext'
     cycle_delay = 1    # While Loop cycle delay
-    state_requested = None # Record the state On/Off requested by user
-    timer_alert = None # timer during alert
-    
+    state_requested    = None # Record the state On/Off requested by user
+    timer_alert        = -1 # timer during alert
+    timer_flash_garage = -1 # timer during flash garage
+
+
     # --- Init functions ---
     def init_socket(self):
         context = zmq.Context()
@@ -97,7 +100,9 @@ class ExtAlarm(object):
             self.in_nox_alert       = UnipiInput(conf['in_alert'])
             self.in_nox_power       = UnipiInput(conf['in_power'])
             self.in_pir_terrasse    = UnipiInput(conf['in_pir_terrasse'])
+            self.in_pir_garage      = UnipiInput(conf['in_pir_garage'])
             self.out_light_terrasse = UnipiOutput(conf['out_light_terrasse'])
+            self.out_light_garage   = UnipiOutput(conf['out_light_garage'])
         except Exception as e:
             name = e.__class__.__name__ # name of the exception eg
             if (name == 'FileNotFoundError'):
@@ -131,13 +136,15 @@ class ExtAlarm(object):
         If Nox alarm is ON, then ExtAlarm is started.
         If Nox alarm is ON and under alert, then ExtAlarm is put on alert.
         """
+        self.out_light_terrasse.set_relay(0)
+        self.out_light_garage.set_relay(0)
         self.read_inputs()
         if (self.in_pir_terrasse.value == 1) and (self.in_nox_power.value == 1):
             self.state = 'alert'
         elif (self.in_nox_power.value == 1):
             self.state = 'on'
         else:
-            self.state = 'on'
+            self.state = 'off'
         self.leave_init()
         
     def __init__(self):
@@ -157,11 +164,12 @@ class ExtAlarm(object):
     def __str__(self):
         out = ''
         out += ('Ext State: %s | ' % (self.state))        
-        for input in [self.in_pir_terrasse]:
+        for input in [self.in_pir_terrasse, self.in_pir_garage]:
             out += ('%s %s | ' % (input.name, input.value))        
-        for output in [self.out_light_terrasse]:
+        for output in [self.out_light_terrasse, self.out_light_garage]:
             out += ('%s %s | ' % (output.name, output.value))        
         out += ('timer alert %s | ' % (self.timer_alert))        
+        out += ('timer flash garage %s | ' % (self.timer_flash_garage))        
         return(out)
         
     # --- Exit functions (Stop Process) ---
@@ -213,6 +221,7 @@ class ExtAlarm(object):
         self.make_DBLog("event", event, color)
 
     def stopping(self):
+        self.out_light_garage.set_relay(0)
         event = 'stop'
         logger.info('state is %s' % (event))
         self.push_socket_event(event)
@@ -227,7 +236,8 @@ class ExtAlarm(object):
         self.make_DBLog("event", event, color)
         self.make_alert("Alert", ExtAlarm.name, event)
         self.out_light_terrasse.set_relay(1)
-        self.timer_alert = self.ALERT_DELAY
+        self.out_light_garage.set_relay(1)
+        self.timer_alert = self.DELAY_ALERT
 
     def serene_stop(self):
         event = 'serene_stop'
@@ -237,6 +247,7 @@ class ExtAlarm(object):
         self.make_DBLog("event", event, color)
         self.make_alert("Info", ExtAlarm.name, event)
         self.out_light_terrasse.set_relay(0)
+        self.out_light_garage.set_relay(0)
                 
     @staticmethod
     def make_alert(*args):
@@ -269,12 +280,39 @@ class ExtAlarm(object):
         self.in_nox_alert.read()
         self.in_nox_power.read()
         self.in_pir_terrasse.read()
+        self.in_pir_garage.read()
         self.out_light_terrasse.read()
+        self.out_light_garage.read()
+    
+    def manage_light_garage(self):
+        """ If nox is ON and pir_garage is 1, then set light garage to ON 
+        """
+        # Light on, start timer 
+        if (self.in_nox_power.value == 1 and self.in_pir_garage.value == 1):
+            if (self.out_light_garage.value == 0):
+                self.out_light_garage.set_relay(1)
+                self.timer_flash_garage = self.DELAY_FLASH_GARAGE
+        
+        # Stop light, Stop timer
+        elif (self.in_nox_power.value == 0):
+            if (self.out_light_garage.value == 1):
+                self.out_light_garage.set_relay(0)
+                self.timer_flash_garage = -1
+
+        # Decrement timer
+        elif (self.timer_flash_garage > 0):
+            self.timer_flash_garage -= 1
+
+        # Decrement timer
+        elif (self.timer_flash_garage < 0):
+            if (self.out_light_garage.value == 1):
+                self.out_light_garage.set_relay(0)
     
     def run_states(self):
         """ Process transitions considering UniPi inputs 
         """
         if (self.state == "off"):
+            self.manage_light_garage()
             if (self.state_requested == 1):
                 self.off_to_on()
             
@@ -282,6 +320,7 @@ class ExtAlarm(object):
                 self.off_to_on()
             
         elif self.state == "on":
+            self.manage_light_garage()
             if (BIND_TO_NOX) and (self.in_nox_power.value == 0):
                 self.any_to_off()
                 
@@ -296,7 +335,7 @@ class ExtAlarm(object):
                 self.off_to_off()
             
             elif (self.in_pir_terrasse.value == 1):
-                self.timer_alert = self.ALERT_DELAY
+                self.timer_alert = self.DELAY_ALERT
             
             else:
                 # Decrement alert delay
