@@ -4,6 +4,18 @@
 		"selected_items":
 		[
 			[
+				"timer",
+				"timer_light_garage"
+			],
+			[
+				"off",
+				"off_to_waiton"
+			],
+			[
+				"start",
+				"started_at"
+			],
+			[
 				"set",
 				"set_relay"
 			],
@@ -18,10 +30,6 @@
 			[
 				"DELAY_",
 				"DELAY_FLASH_GARAGE"
-			],
-			[
-				"timer",
-				"timer_alert"
 			],
 			[
 				"nox_",
@@ -60,15 +68,6 @@
 	"buffers":
 	[
 		{
-			"file": "src/noxAlarmProcess.py",
-			"settings":
-			{
-				"buffer_size": 12967,
-				"encoding": "UTF-8",
-				"line_ending": "Unix"
-			}
-		},
-		{
 			"file": "src/config.py",
 			"settings":
 			{
@@ -78,34 +77,30 @@
 			}
 		},
 		{
-			"contents": "# coding: utf-8\nfrom gevent import monkey\nmonkey.patch_all()\n\nfrom os.path import abspath  as abspath  # Convert relative to absolute path\nfrom os.path import dirname  as dirname  # Name of the last directory of a path\nfrom os.path import basename as basename\nfrom os.path import join     as join\n\n# Detect ENV type from path\nsrc_path     = abspath(dirname(__file__))           # /home/pi/Dev/home_alarm/src\nproject_path = dirname(src_path)                    # /home/pi/Dev/home_alarm\nenv_path     = dirname(project_path)                # /home/pi/Dev\nconf_path    = join(env_path, \"home_alarm_CONFIG/\")  # /home/pi/Dev/home_alarm_CONFIG\n\nimport signal\nimport sys\nfrom os.path import join as join\nfrom transitions import Machine\nfrom time import sleep\nfrom datetime import datetime\nimport zmq\nimport logging\n\n\"\"\" Configure logger \"\"\"\nfrom utils.logger_config import flask_logger_settings\nfrom logging.config import dictConfig\ndictConfig(flask_logger_settings)\nlogger = logging.getLogger('extalarm.process')\n\n\"\"\" Import project util dependencies \"\"\"\nfrom utils.UnipiIO       import UnipiInput, UnipiOutput\nfrom utils.config_helper import dict_from_json_file\nfrom utils.emails        import EmailAlarmAlert\nfrom utils.sms           import SmsAlarmAlert\nfrom web                 import create_app\nfrom web.models          import DBLog\n\n\"\"\" import socket to thread gateway \"\"\"\nfrom ext_alarm import zmq_socket_config\n\n\"\"\" UniPi IO config file \"\"\"\nUNIPI_IO_CONFIG = join(conf_path, 'software', 'nox_unipi_io.json')\n\n#DEBUG = None\nDEBUG = True\n\nBIND_TO_NOX = True # None / True. bind start/stop to NoxAlarm status\n\nclass ExtAlarm(object):\n    \"\"\" La class ExtAlarm est une machine à état qui vérifie l'état dedes détecteurs.\n    L'initialisation configure \n    - les entrées (PIR Terrasse) \n    - les sortie (Lumière Terrasse)\n    L'appel de la fonction run_states() provoque le rafraississement des valeurs en entrées. \n    run_states() doit être appelée dans une boucle while à interval régulier (~1 seconde)\n    Lorsque la machine change d'état, la fonction push_socket_event() émet l'info sur un socket. \n    le socket est passé en paramètre à l'init.\n    Un programme externe (appli web) appelle la fonction push_socket_state() à intervalle régulier \n    pour connaitre l'état de la machine (on, off, etc).\n    \"\"\"\n    \n    states = ['init' , 'off'     , 'on'      , 'alert'     ]\n    colors = ['info' , 'success' , 'primary' , 'warning'   , 'primary']\n    events = ['init' , 'stop'    , 'start'   , 'detection' , 'serene_stop']\n    DELAY_ALERT = 60*4 # Delay for alert timer (in ~second)\n    DELAY_FLASH_GARAGE = 60*4 # Delay for alert timer (in ~second)\n\n    name        = 'Ext'\n    cycle_delay = 1    # While Loop cycle delay\n    state_requested    = None # Record the state On/Off requested by user\n    timer_alert        = -1 # timer during alert\n    timer_flash_garage = -1 # timer during flash garage\n\n\n    # --- Init functions ---\n    def init_socket(self):\n        context = zmq.Context()\n        \n        try:\n            # Socket SUB_COMMAND Receive Commands (start stop) from Flask (ThreadExtAlarm)\n            self.SUB_COMMAND = context.socket(zmq.SUB)\n            self.SUB_COMMAND.connect (\"tcp://localhost:%s\" % zmq_socket_config.port_socket_extalarm_command)\n            self.SUB_COMMAND.setsockopt_string(zmq.SUBSCRIBE, zmq_socket_config.TOPIC_REQUEST)\n\n            # Socket PUB_STATUS sends Status updates to Flask (ThreadExttAlarm)\n            self.PUB_STATE = context.socket(zmq.PUB)\n            self.PUB_STATE.bind(\"tcp://*:%s\" % zmq_socket_config.port_socket_extalarm_state)\n        except:\n            msg = 'Failed init ZMQ socket'\n            logger.exception(msg)\n            self.exit(msg, exit_now=True)\n            \n    def init_config(self):\n        try:\n            # load config from json\n            logger.info(\"Loading config file %s\" % (UNIPI_IO_CONFIG))\n            conf = dict_from_json_file(UNIPI_IO_CONFIG)\n            # declare I/O from config\n            self.in_nox_alert       = UnipiInput(conf['in_alert'])\n            self.in_nox_power       = UnipiInput(conf['in_power'])\n            self.in_pir_terrasse    = UnipiInput(conf['in_pir_terrasse'])\n            self.in_pir_garage      = UnipiInput(conf['in_pir_garage'])\n            self.out_light_terrasse = UnipiOutput(conf['out_light_terrasse'])\n            self.out_light_garage   = UnipiOutput(conf['out_light_garage'])\n        except Exception as e:\n            name = e.__class__.__name__ # name of the exception eg\n            if (name == 'FileNotFoundError'):\n                logger.error('Config file not found %s' % (UNIPI_IO_CONFIG))\n            elif (name == 'KeyError'):\n                logger.error('config file corrupted')\n            else:\n                # Generic error: log trace\n                logger.exception('Error loading config %s' % (str(sys.exc_info()[0])))\n            \n            # Whatever the exception, conf failed, exit the program\n            msg = 'Failed init Config'\n            self.exit(msg, exit_now=True)\n    \n    def init_statemachine(self):\n        # State Machine\n        self.machine = Machine(model=self, states=ExtAlarm.states, initial='init')\n        \n        # Transitions\n        self.machine.add_transition('off_to_on',      'off',     'on',        before='starting',    after='push_socket_state')\n        self.machine.add_transition('any_to_off' ,    '*'  ,     'off',       before='stopping',    after='push_socket_state')\n        self.machine.add_transition('on_to_alert',    'on' ,     'alert',     before='detection',   after='push_socket_state')\n        self.machine.add_transition('alert_to_on',    'alert',   'on',        before='serene_stop', after='push_socket_state')\n        #self.machine.add_transition('was_alert_yo_on',    'was_alert','on',       before='serene_stop', after='push_socket_state')\n    \n    def init_state(self):\n        \"\"\" Set the real state of the system when the program (re)start\n        Transition init -> any is done \n        callback leave_init() is call manually.\n        No email/sms alert will be sent.\n        If Nox alarm is ON, then ExtAlarm is started.\n        If Nox alarm is ON and under alert, then ExtAlarm is put on alert.\n        \"\"\"\n        self.out_light_terrasse.set_relay(0)\n        self.out_light_garage.set_relay(0)\n        self.read_inputs()\n        if (self.in_pir_terrasse.value == 1) and (self.in_nox_power.value == 1):\n            self.state = 'alert'\n        elif (self.in_nox_power.value == 1):\n            self.state = 'on'\n        else:\n            self.state = 'off'\n        self.leave_init()\n        \n    def __init__(self):\n        logger.info('Starting ...')\n        \n        self.run = True # Flag to stop while loop. (on KeyboardInterrupt or SIGINT)\n    \n        # Register signal handler\n        # KeyboardInterrupt (SIGINT) managed directly in main loop\n        signal.signal(signal.SIGTERM, self.exit_from_signals) # Supervisor Exit code (15)\n        \n        self.init_socket()\n        self.init_config()\n        self.init_statemachine()\n        self.init_state() # Read inputs and Set state after init\n                \n    def __str__(self):\n        out = ''\n        out += ('Ext State: %s | ' % (self.state))        \n        for input in [self.in_pir_terrasse, self.in_pir_garage]:\n            out += ('%s %s | ' % (input.name, input.value))        \n        for output in [self.out_light_terrasse, self.out_light_garage]:\n            out += ('%s %s | ' % (output.name, output.value))        \n        out += ('timer alert %s | ' % (self.timer_alert))        \n        out += ('timer flash garage %s | ' % (self.timer_flash_garage))        \n        return(out)\n        \n    # --- Exit functions (Stop Process) ---\n    def exit_from_signals(self, signal_num, frame):\n        \"\"\" Callback called when SIGTERM received from supervisor \n        Do call exit() with detail of the signal_num\n        \"\"\"\n        detail = 'signal {}'.format(signal_num)\n        self.exit(detail)\n\n    def exit(self, detail, exit_now=None):\n        \"\"\" Stop the process (log before)\n        'exit_now': Option to stop now or to set self.run to False (will stop at the end of the current while loop cycle)\n        \"\"\"\n        self.make_DBLog('system', 'exit', 'danger', detail=detail)\n        logger.critical('Exit caused by {}'.format(detail))\n        msg = 'exit'\n        if exit_now: sys.exit() # exit here\n        else: self.run = False  # exit after end of current loop\n\n\n    # --- Handle commands from web App ---\n    def start_alarm(self):\n        \"\"\" Command to start alarm. \"\"\"\n        self.state_requested = 1\n        \n    def stop_alarm(self):\n        \"\"\" Command to stop alarm. \"\"\"\n        self.state_requested = 0\n\n        \n    # --- StateMachine Callbacks (Actions on state change) ---\n    def leave_init(self):\n        \"\"\" From state init to any other state\n        This is not a callback (called manually)\n        \"\"\"\n        msg = 'init (state: {})'.format(self.state)\n        logger.info(msg)\n        event = 'init'\n        self.push_socket_event(event)        \n        color = ExtAlarm.colors[ExtAlarm.events.index(event)]\n        self.make_DBLog('system', msg, color)\n\n    def starting(self):\n        event = 'start'\n        logger.info('state is %s' % (event))\n        self.push_socket_event(event)\n        color = ExtAlarm.colors[ExtAlarm.events.index(event)]\n        self.make_DBLog(\"event\", evcolorscolorsecolorsnt, color)colors\n\n    def stopping(self):colors\n        self.stop_light_garage()\n        event = 'stop'\n        logger.info('state is %s' % (event))\n        self.push_socket_event(event)\n        color = ExtAlarm.colors[ExtAlarm.events.index(event)]\n        self.make_DBLog(\"event\", event, color)\n\n    def detection(self):\n        event = 'detection'\n        logger.info('state is %s' % (event))\n        self.push_socket_event(event)\n        color = ExtAlarm.colors[ExtAlarm.events.index(event)]\n        self.make_DBLog(\"event\", event, color)\n        self.make_alert(\"Alert\", ExtAlarm.name, event)\n        self.out_light_terrasse.set_relay(1)\n        self.out_light_garage.set_relay(1)\n        self.timer_alert = self.DELAY_ALERT\n\n    def serene_stop(self):\n        event = 'serene_stop'\n        logger.info('state is %s' % (event))\n        self.push_socket_event(event)\n        color = ExtAlarm.colors[ExtAlarm.events.index(event)]\n        self.make_DBLog(\"event\", event, color)\n        self.make_alert(\"Info\", ExtAlarm.name, event)\n        self.out_light_terrasse.set_relay(0)\n        self.out_light_garage.set_relay(0)\n                \n    @staticmethod\n    def make_alert(*args):\n        \"\"\" wrapper method to call mail & sms alerts \"\"\"\n        if not DEBUG:\n            try: SmsAlarmAlert(*args)\n            except: logger.exception('Fail calling SmsAlarmAlert()')\n            try: EmailAlarmAlert(*args)\n            except: logger.exception('Fail calling EmailAlarmAlert()')\n    \n    @staticmethod\n    def make_DBLog(subject, event, badge, detail=''):\n        \"\"\" wrapper method to call DBLog.new() on alarm event \"\"\"\n        app = create_app()\n        with app.app_context():\n            DBLog.new(subject=subject, scope=\"ext\", badge=badge, message=event, ip='-', user='-', detail=detail)\n\n    # --- Push info to web App socket ---\n    def push_socket_event(self, event):\n        self.PUB_STATE.send_string(zmq_socket_config.TOPIC_EVENT + \" \" + event)\n        logger.debug(\"Extalarm send event \"+ event)\n            \n    def push_socket_state(self):\n        if DEBUG: logger.debug(\"Extalarm send state \"+ self.state)\n        self.PUB_STATE.send_string(zmq_socket_config.TOPIC_STATE + \" \" + self.state)\n\n    # --- Read UniPi inputs ---\n    def read_inputs(self):\n        \"\"\" Read physical IO from Unipi, update class variables. \"\"\"\n        self.in_nox_alert.read()\n        self.in_nox_power.read()\n        self.in_pir_terrasse.read()\n        self.in_pir_garage.read()\n        self.out_light_terrasse.read()\n        self.out_light_garage.read()\n    \n    def manage_light_garage(self):\n        \"\"\" If nox is ON and pir_garage is 1, then set light garage to ON \n        \"\"\"\n        # Light on, start timer \n        if (self.in_nox_power.value == 1 and self.in_pir_garage.value == 1):\n            if (self.out_light_terrasse.value == 0):\n                self.out_light_terrasse.set_relay(1)\n                self.timer_flash_garage = self.DELAY_FLASH_GARAGE\n        \n        # Stop light, Stop timer\n        elif (self.in_nox_power.value == 0):\n            if (self.out_light_terrasse.value == 1):\n                self.out_light_terrasse.set_relay(0)\n                self.timer_flash_garage = -1\n\n        # Decrement timer\n        elif (self.timer_flash_garage > 0):\n            self.timer_flash_garage -= 1\n\n        # Decrement timer\n        elif (self.timer_flash_garage < 0):\n            if (self.out_light_terrasse.value == 1):\n                self.out_light_terrasse.set_relay(0)\n    \n    def manage_light_garage_old(self):\n        \"\"\" If nox is ON and pir_garage is 1, then set light garage to ON \n        \"\"\"\n        if (self.in_pir_garage.value == 1):\n            self.out_light_terrasse.set_relay(1)\n            self.timer_flash_garage = self.DELAY_FLASH_GARAGE\n        \n        else:\n            # Decrement alert delay\n            self.timer_flash_garage -= 1\n\n            if self.timer_flash_garage < 0:\n                self.timer_flash_garage = None\n                self.out_light_terrasse.set_relay(0)\n    \n    def stop_light_garage(self):\n        \"\"\" stop light garage and stop timer \n        \"\"\"\n        self.out_light_terrasse.set_relay(0)\n        self.timer_flash_garage = -1\n    \n    def run_states(self):\n        \"\"\" Process transitions considering UniPi inputs \n        \"\"\"\n        if (self.state == \"off\"):\n            if (self.state_requested == 1):\n                self.off_to_on()\n            \n            if (BIND_TO_NOX) and (self.in_nox_power.value == 1):\n                self.off_to_on()\n            \n        elif self.state == \"on\":\n            self.manage_light_garage()\n            if (BIND_TO_NOX) and (self.in_nox_power.value == 0):\n                self.any_to_off()\n                \n            if (self.in_pir_terrasse.value == 1):\n                self.on_to_alert()\n        \n        elif self.state == \"alert\":\n            if (self.state_requested == 0):\n                self.off_to_off()\n            \n            if (BIND_TO_NOX) and (self.in_nox_power.value == 0):\n                self.off_to_off()\n            \n            elif (self.in_pir_terrasse.value == 1):\n                self.timer_alert = self.DELAY_ALERT\n            \n            else:\n                # Decrement alert delay\n                self.timer_alert -= 1\n\n                if self.timer_alert < 0:\n                    self.timer_alert = None\n                    self.alert_to_on()\n\n\n    def receive_request(self):\n        \"\"\" Check if a request is received and process it\n        Request can be Command (start, stop) \n        Request can be \"Status update\" requested by web app \n        \"\"\"\n        try:\n            payload = self.SUB_COMMAND.recv_string(flags=zmq.NOBLOCK)\n            topic, command = payload.split()\n            if (topic == zmq_socket_config.TOPIC_REQUEST):\n                if (command == zmq_socket_config.COMMAND_START):\n                    logger.debug(\"Extalarm receive COMMAND_START\")\n                    self.start_alarm()\n                elif (command == zmq_socket_config.COMMAND_STOP):\n                    logger.debug(\"Extalarm receive COMMAND_STOP\")\n                    self.stop_alarm()\n                elif (command == zmq_socket_config.STATUS_UPDATE):\n                    logger.debug(\"Extalarm receive REQUEST_STATUS_UPDATE\")\n                    self.push_socket_state()\n        \n        # Else if no command received, do nothing\n        except zmq.error.Again:\n            pass \n\n            \nif __name__ == '__main__':\n    \"\"\" Init ext Alarm Statemachine and run infinite loop\n    Called from console for debug\n    Called and managed by supervisor for production\n    \"\"\"\n    if DEBUG:\n        logger.warning(\"DEBUG mode ON\")\n    else:\n        logger.debug(\"DEBUG mode OFF\")\n    ext = ExtAlarm()\n    logger.info(\"Process is Running (cycle delay %ss)\" % (ext.cycle_delay))\n    \n    while(ext.run):\n        try:\n            if DEBUG: logger.debug('{}'.format(ext))\n            ext.read_inputs()\n            ext.run_states()\n            ext.receive_request()\n            # Commented out : no more sent each second but on demand (when web page is loaded or on alarm state change)\n            # ext.push_socket_state()\n            sleep(ExtAlarm.cycle_delay)\n        except KeyboardInterrupt:\n            logger.warning(\"Exit caused by KeyboardInterrupt\")\n            ext.exit('KeyboardInterrupt', exit_now=False)\n        ",
 			"file": "src/extAlarmProcess.py",
-			"file_size": 15755,
-			"file_write_time": 132469253237270108,
 			"settings":
 			{
-				"buffer_size": 16793,
+				"buffer_size": 15941,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "src/utils/UnipiIO.py",
+			"file": "src/extAlarmProcess_debug.ini",
 			"settings":
 			{
-				"buffer_size": 5083,
+				"buffer_size": 88,
+				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"contents": "[group:prod]\nprograms=gunicorn,nox_alarm\n\n[program:gunicorn]\nuser=pi\ncommand = /home/pi/.virtualenvs/prod/bin/gunicorn -k gevent -w 1 main:app\ndirectory =      /home/pi/Prod/home_alarm/src\nstdout_logfile = /home/pi/Prod/home_alarm_LOG/gunicorn.log\nstderr_logfile = /home/pi/Prod/home_alarm_LOG/gunicorn.err\nstdout_logfile_maxbytes=1MB\nstdout_logfile_backups=2\nstderr_logfile_maxbytes=1MB\nstderr_logfile_backups=2\nstopasgroup=true\nkillasgroup=true\nautostart=true\nautorestart=true\nstopsignal=INT\n\n[program:nox_alarm]\nuser=pi\ndirectory = /home/pi/Prod/home_alarm/src\ncommand = /home/pi/.virtualenvs/prod/bin/python noxAlarmProcess.py\nstdout_logfile = /home/pi/Prod/home_alarm_LOG/NoxProcess.log\nstderr_logfile = /home/pi/Prod/home_alarm_LOG/NoxProcess.err\nstdout_logfile_maxbytes=1MB\nstdout_logfile_backups=2\nstderr_logfile_maxbytes=1MB\nstderr_logfile_backups=2\nstopasgroup=true\nkillasgroup=true\nautostart=true\nautorestart=true\n\n",
-			"file": "/media/alarm_dev/home_alarm_CONFIG/etc/supervisor_alarm_prod.conf",
-			"file_size": 958,
-			"file_write_time": 132337989253768435,
+			"file": "src/utils/util_timer.py",
 			"settings":
 			{
-				"buffer_size": 926,
-				"line_ending": "Windows"
+				"buffer_size": 1771,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
 			}
 		},
 		{
@@ -241,11 +236,23 @@
 	],
 	"file_history":
 	[
+		"/media/alarm_dev/home_alarm/src/noxAlarmProcess.py",
+		"/media/alarm_dev/home_alarm/src/extAlarmProcess.py",
+		"/home/cheperboy/Documents/script_matrice/sed.txt",
+		"/home/cheperboy/Bureau/sonnette/sonnette.txt",
+		"/home/cheperboy/.zshrc",
+		"/home/cheperboy/rsync_backup/rsync_tasks.sh",
+		"/media/cheperboy/data_ssd/documents/Administratif/impots/1658067754504.txt",
+		"/home/cheperboy/mylog.log",
+		"/home/cheperboy/.ssh/known_hosts",
+		"/home/cheperboy/.local/share/dolphin/view_properties/global/.directory",
+		"/home/cheperboy/.config/autostart/conky.desktop",
+		"/home/cheperboy/.luckyBackup/settings.ini",
+		"/media/cheperboy/data_ssd/documents/computer/conf_et_iso/conf cam ip orsay/2017-03-31",
+		"/media/alarm_dev/home_alarm_CONFIG/etc/supervisor_alarm_prod.conf",
 		"/home/cheperboy/.config/sublime-text-3/Packages/User/Default (Linux).sublime-mousemap",
 		"/media/alarm_dev/home_alarm/src/utils/UnipiIO.py",
 		"/media/alarm_dev/home_alarm/src/web/templates/ext-panel.html.j2",
-		"/home/cheperboy/rsync_backup/rsync_tasks.sh",
-		"/media/alarm_dev/home_alarm/src/extAlarmProcess.py",
 		"/media/alarm_dev/home_alarm_CONFIG/software/nox_unipi_io.json",
 		"/media/alarm_dev/home_alarm/src/nox_alarm/zmq_socket_config.py",
 		"/media/alarm_dev/home_alarm/src/nox_alarm/noxGateway.py",
@@ -345,6 +352,16 @@
 		"case_sensitive": true,
 		"find_history":
 		[
+			"exists",
+			"timer_wa",
+			"^([ ]{4})",
+			"^[ ]{16}",
+			"timer_alert",
+			"supervisor_start",
+			"stop_light_garage",
+			"stop_li",
+			"out_light_terrasse",
+			"manage_light_garage",
 			"in_nox_power",
 			"in_nox_alert",
 			"leave_init",
@@ -383,9 +400,12 @@
 		"highlight": true,
 		"in_selection": false,
 		"preserve_case": false,
-		"regex": false,
+		"regex": true,
 		"replace_history":
 		[
+			"  ",
+			"        ",
+			"^[ ]{8}",
 			"DELAY_ALERT",
 			"ext",
 			"ExtAlarm"
@@ -393,7 +413,7 @@
 		"reverse": false,
 		"show_context": true,
 		"use_buffer2": true,
-		"whole_word": true,
+		"whole_word": false,
 		"wrap": true
 	},
 	"groups":
@@ -404,36 +424,6 @@
 			[
 				{
 					"buffer": 0,
-					"file": "src/noxAlarmProcess.py",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 12967,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								231,
-								231
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 2,
-					"type": "text"
-				},
-				{
-					"buffer": 1,
 					"file": "src/config.py",
 					"semi_transient": false,
 					"settings":
@@ -459,84 +449,54 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 6,
+					"stack_index": 2,
 					"type": "text"
 				},
 				{
-					"buffer": 2,
+					"buffer": 1,
 					"file": "src/extAlarmProcess.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 16793,
+						"buffer_size": 15941,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								13448,
-								13448
+								13032,
+								13032
 							]
 						],
 						"settings":
 						{
 							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
+							"tab_size": 2,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 4498.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
-					"file": "src/utils/UnipiIO.py",
-					"semi_transient": true,
-					"settings":
-					{
-						"buffer_size": 5083,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								950,
-								950
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Python/Python.sublime-syntax",
-							"tab_size": 4,
-							"translate_tabs_to_spaces": true
-						},
-						"translation.x": 0.0,
-						"translation.y": 1296.0,
+						"translation.y": 6685.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
 					"type": "text"
 				},
 				{
-					"buffer": 4,
-					"file": "/media/alarm_dev/home_alarm_CONFIG/etc/supervisor_alarm_prod.conf",
+					"buffer": 2,
+					"file": "src/extAlarmProcess_debug.ini",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 926,
+						"buffer_size": 88,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								387,
-								387
+								88,
+								88
 							]
 						],
 						"settings":
@@ -547,11 +507,41 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
+					"stack_index": 0,
 					"type": "text"
 				},
 				{
-					"buffer": 5,
+					"buffer": 3,
+					"file": "src/utils/util_timer.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1771,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								640,
+								640
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
 					"file": "src/web/views/nox.py",
 					"semi_transient": false,
 					"settings":
@@ -581,7 +571,7 @@
 					"type": "text"
 				},
 				{
-					"buffer": 6,
+					"buffer": 5,
 					"file": "src/web/views/ext.py",
 					"semi_transient": false,
 					"settings":
@@ -607,7 +597,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 5,
 					"type": "text"
 				}
 			]
@@ -698,7 +688,7 @@
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 244.0,
+	"side_bar_width": 179.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

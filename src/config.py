@@ -34,7 +34,7 @@ SQLALCHEMY_BINDS = {
     'users':        'sqlite:///' + join(DB_PATH, 'users.db'       )
 }
 
-PANEL_EXT = False  # Activate Ext Alarm module
+PANEL_EXT = True  # Activate Ext Alarm module
 PANEL_NOX = True  # Activate Nox Alarm module
 
 VENDOR_LOCAL = True  # True: Get css and js from local (False: from cdn provider)

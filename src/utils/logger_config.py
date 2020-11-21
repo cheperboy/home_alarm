@@ -126,7 +126,8 @@ flask_logger_settings = {
 
         # logger 'alarm' will gather all children of the kind 'alarm.thread' and 'alarm.process'
         'alarm': {
-            'level': 'DEBUG',
+            'level': 'WARNING',
+            # 'level': 'DEBUG',
             'handlers': ['stdout', 'file_info', 'file_err'],
             'propagate': False   # don't duplicate to root logger
         },
