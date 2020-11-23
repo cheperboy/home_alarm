@@ -44,7 +44,7 @@ def index():
         current_app.logger.info('login succes %s' % (user.name))
         DBLog.new(badge="success", subject="login", message="success", ip=request.remote_addr)
         # session['name'] = form.name.data
-        return redirect(url_for('nox.index'))
+        return redirect(url_for('panel.index'))
     elif request.method == 'GET':
         current_app.logger.debug('loading form')
         form.name.data = session.get('name', '')
@@ -55,4 +55,4 @@ def logout():
     current_app.logger.info('logout %s' % (current_user.name))
     DBLog.new(badge="primary", subject="login", message="logout", ip=request.remote_addr)
     logout_user()
-    return redirect(url_for('nox.index'))
+    return redirect(url_for('panel.index'))
