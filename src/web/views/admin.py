@@ -8,12 +8,12 @@ from .system_info import *
 admin = Blueprint('admin', __name__)
 
 # pages_categories    = ["alarm", "system"]
-pages_alarm         = ["logins", "commands", "events", "logs", "system"]
+pages_alarm         = ["logs", "logins", "commands", "events", "system"]
 
 @admin.route('/')
 @login_required
 def index():
-    return redirect(url_for('admin.logins'))
+    return redirect(url_for('admin.logs'))
 
 @admin.route('/logins')
 @login_required

@@ -10,15 +10,20 @@
 			<ul class="navbar-nav mr-auto mt-2 mt-md-0">
 				{% if current_user.is_authenticated %}
 					<li class="nav-item active">
-						<a class="nav-link" href="{{ url_for('panel.index') }}">Panel <span class="sr-only">(current)</span></a>
+						<a class="nav-link" href="{{ url_for('panel.panel_nox_bind') }}">Panel<span class="sr-only">(current)</span></a>
 					</li>
-					<li class="nav-item active">
-						<a class="nav-link" href="{{ url_for('nox.index') }}">Nox <span class="sr-only">(current)</span></a>
-					</li>
-					{% if config.PANEL_EXT %}
-					<li class="nav-item active">
-						<a class="nav-link" href="{{ url_for('ext.index') }}">Ext <span class="sr-only">(current)</span></a>
-					</li>
+					{% if config['ENVNAME'] == 'Dev' %}
+						<li class="nav-item active">
+							<a class="nav-link" href="{{ url_for('panel.both') }}">Both <span class="sr-only">(current)</span></a>
+						</li>
+						<li class="nav-item active">
+							<a class="nav-link" href="{{ url_for('nox.index') }}">Nox <span class="sr-only">(current)</span></a>
+						</li>
+						{% if config.PANEL_EXT %}
+							<li class="nav-item active">
+								<a class="nav-link" href="{{ url_for('ext.index') }}">Ext <span class="sr-only">(current)</span></a>
+							</li>
+						{% endif %}
 					{% endif %}
 					<li class="nav-item active">
 						<a class="nav-link" href="{{ url_for('admin.index') }}">Admin <span class="sr-only">(current)</span></a>

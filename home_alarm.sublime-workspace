@@ -68,39 +68,85 @@
 	"buffers":
 	[
 		{
-			"file": "src/config.py",
+			"file": "src/web/views/ext.py",
 			"settings":
 			{
-				"buffer_size": 2243,
+				"buffer_size": 2593,
 				"encoding": "UTF-8",
-				"line_ending": "Windows"
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/web/static/js/alarm.js",
+			"settings":
+			{
+				"buffer_size": 9565,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
 			}
 		},
 		{
 			"file": "src/extAlarmProcess.py",
 			"settings":
 			{
-				"buffer_size": 15941,
+				"buffer_size": 15950,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "src/extAlarmProcess_debug.ini",
+			"file": "src/noxAlarmProcess.py",
 			"settings":
 			{
-				"buffer_size": 88,
+				"buffer_size": 12967,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
 			}
 		},
 		{
-			"file": "src/utils/util_timer.py",
+			"file": "docs/software.md",
 			"settings":
 			{
-				"buffer_size": 1771,
+				"buffer_size": 2498,
 				"encoding": "UTF-8",
 				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "# Developpement stuff\n\n## Virtualenv\nvirtualenv `dev` or `prod`  \n\n\n## Dev / Debug\nTo activate virtualenv `workon dev`  \nGo into dev directory `cd ~/Dev/home_alarm/src`  \nTo run front-end server `python main.py`  \nTo run back-end process `python extAlarmProcess.py`  \nCheck the debug flags in \n- `extAlarmProcess.py`\n- `noxAlarmProcess.py`\n- `config.py`\n\n\nWhen running front-end this way, it uses the port defined in `config.py` (`PORT = 5000`)\nWhen running front-end in production mode, it uses the default port 8000 (for internal gunicorn server) and 80 for external web server.\n\n\n## Documentation\n\nMkdoc used to generate the wiki. Markdown files are stored in folder *doc/*.  Published to [https://alarm-wiki.readthedocs.io](https://alarm-wiki.readthedocs.io). Pushing repository to github will trigger ReadTheDocs build.\n\nCan be updated on the web and pushed to github from [https://stackedit.io](https://stackedit.io).  \n!!! warning \"\"\n    Don't forget to `git pull` the local repository after editing online.\n\n\nTo test documentation on local server, run `mkdocs serve --dev-addr 0.0.0.0:8001`.  \n\nConfiguration file `mkdoc.yml`:\n``` yaml\nsite_name: Alarm\ntheme: readthedocs\nrepo_url: https://github.com/cheperboy/home_alarm/\ndocs_dir: docs/\nnav:\n    - Home: index.md\n    - Install Software: install_alarm.md\n    - Software: software.md\n...\n```\nThe packages required for building the documentation are declared in  \n\n- flask_app/requirements.txt for dev build\n- docs/requirements.txt for readthedocs.io build\n\n### Usefule extensions\n\n- [pymdown](https://squidfunk.github.io/mkdocs-material/extensions/pymdown/)\n- [mermaid plugin](https://github.com/pugong/mkdocs-mermaid-plugin)\n- [pymdown-extensions](https://facelessuser.github.io/pymdown-extensions/extensions/arithmatex/)\n\n# Github config\n\n!!! warning \"\"\n    Add `*secret*` and `*.pem` to .gitignore\n\n",
+			"file": "docs/dev_workflow.md",
+			"file_size": 1830,
+			"file_write_time": 132505259770163067,
+			"settings":
+			{
+				"buffer_size": 1860,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/config.py",
+			"settings":
+			{
+				"buffer_size": 2242,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/web/templates/_ext-panel.html.j2",
+			"settings":
+			{
+				"buffer_size": 2459,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "src/web/templates/_navbar.html.j2",
+			"settings":
+			{
+				"buffer_size": 2354,
+				"line_ending": "Windows"
 			}
 		},
 		{
@@ -108,14 +154,6 @@
 			"settings":
 			{
 				"buffer_size": 2702,
-				"line_ending": "Unix"
-			}
-		},
-		{
-			"file": "src/web/views/ext.py",
-			"settings":
-			{
-				"buffer_size": 2273,
 				"line_ending": "Unix"
 			}
 		}
@@ -131,6 +169,10 @@
 		"last_filter": "",
 		"selected_items":
 		[
+			[
+				"package",
+				"Package Control: List Packages"
+			],
 			[
 				"br",
 				"Browse Mode: Outline (Right)"
@@ -150,10 +192,6 @@
 			[
 				"Package Control: in",
 				"Package Control: Install Package"
-			],
-			[
-				"package",
-				"Preferences: Browse Packages"
 			],
 			[
 				"ressource",
@@ -223,21 +261,38 @@
 	"expanded_folders":
 	[
 		"/media/alarm_dev/home_alarm",
+		"/media/alarm_dev/home_alarm/docs",
 		"/media/alarm_dev/home_alarm/src",
 		"/media/alarm_dev/home_alarm/src/ext_alarm",
 		"/media/alarm_dev/home_alarm/src/nox_alarm",
-		"/media/alarm_dev/home_alarm/src/utils",
 		"/media/alarm_dev/home_alarm/src/web",
+		"/media/alarm_dev/home_alarm/src/web/static",
+		"/media/alarm_dev/home_alarm/src/web/static/css",
+		"/media/alarm_dev/home_alarm/src/web/static/js",
 		"/media/alarm_dev/home_alarm/src/web/templates",
 		"/media/alarm_dev/home_alarm/src/web/views",
 		"/media/alarm_dev/home_alarm_CONFIG",
 		"/media/alarm_dev/home_alarm_CONFIG/etc",
+		"/media/alarm_dev/home_alarm_CONFIG/etc/nginx",
+		"/media/alarm_dev/home_alarm_CONFIG/etc/nginx/sites-enabled",
 		"/media/alarm_dev/home_alarm_CONFIG/software"
 	],
 	"file_history":
 	[
+		"/home/cheperboy/.config/Code/Preferences",
+		"/home/cheperboy/.config/Code/User/settings.json",
+		"/media/alarm_dev/home_alarm/src/ext_alarm/extGateway.py",
+		"/media/alarm_dev/home_alarm/src/config.py",
 		"/media/alarm_dev/home_alarm/src/noxAlarmProcess.py",
 		"/media/alarm_dev/home_alarm/src/extAlarmProcess.py",
+		"/media/alarm_dev/home_alarm/src/main.py",
+		"/media/alarm_dev/home_alarm/src/utils/logger_config.py",
+		"/media/alarm_dev/home_alarm/src/utils/util_timer.py",
+		"/media/alarm_dev/home_alarm/src/utils/UnipiIO.py",
+		"/media/alarm_dev/home_alarm/src/ext_alarm/zmq_socket_config.py",
+		"/media/alarm_dev/home_alarm/src/nox_alarm/zmq_socket_config.py",
+		"/media/alarm_dev/home_alarm/src/web/views/ext.py",
+		"/media/alarm_dev/home_alarm/src/web/views/nox.py",
 		"/home/cheperboy/Documents/script_matrice/sed.txt",
 		"/home/cheperboy/Bureau/sonnette/sonnette.txt",
 		"/home/cheperboy/.zshrc",
@@ -251,10 +306,8 @@
 		"/media/cheperboy/data_ssd/documents/computer/conf_et_iso/conf cam ip orsay/2017-03-31",
 		"/media/alarm_dev/home_alarm_CONFIG/etc/supervisor_alarm_prod.conf",
 		"/home/cheperboy/.config/sublime-text-3/Packages/User/Default (Linux).sublime-mousemap",
-		"/media/alarm_dev/home_alarm/src/utils/UnipiIO.py",
 		"/media/alarm_dev/home_alarm/src/web/templates/ext-panel.html.j2",
 		"/media/alarm_dev/home_alarm_CONFIG/software/nox_unipi_io.json",
-		"/media/alarm_dev/home_alarm/src/nox_alarm/zmq_socket_config.py",
 		"/media/alarm_dev/home_alarm/src/nox_alarm/noxGateway.py",
 		"/run/user/1000/gvfs/smb-share:server=alarm.local,share=partage/home_alarm_CONFIG/software/nox_unipi_io.json",
 		"/media/alarm_dev/home_alarm/home_alarm.sublime-project",
@@ -334,7 +387,7 @@
 	],
 	"find":
 	{
-		"height": 42.0
+		"height": 41.0
 	},
 	"find_in_files":
 	{
@@ -349,9 +402,26 @@
 	},
 	"find_state":
 	{
-		"case_sensitive": true,
+		"case_sensitive": false,
 		"find_history":
 		[
+			"SmsAlarmAlert",
+			"start_alarm",
+			"stop_alarm",
+			"start_alarm",
+			"state_requested",
+			"command",
+			"state_requested",
+			"states",
+			"colors",
+			"div_alarm_state",
+			"states",
+			"push_socket_state",
+			"zmq_socket_config",
+			"nox",
+			"wait_out",
+			"delayon",
+			"serene_stop",
 			"exists",
 			"timer_wa",
 			"^([ ]{4})",
@@ -419,24 +489,24 @@
 	"groups":
 	[
 		{
-			"selected": 2,
+			"selected": 3,
 			"sheets":
 			[
 				{
 					"buffer": 0,
-					"file": "src/config.py",
+					"file": "src/web/views/ext.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 2243,
+						"buffer_size": 2593,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								319,
-								319
+								1570,
+								1570
 							]
 						],
 						"settings":
@@ -449,24 +519,53 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 8,
 					"type": "text"
 				},
 				{
 					"buffer": 1,
-					"file": "src/extAlarmProcess.py",
+					"file": "src/web/static/js/alarm.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 15941,
+						"buffer_size": 9565,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								13032,
-								13032
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 9,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "src/extAlarmProcess.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 15950,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
 							]
 						],
 						"settings":
@@ -476,55 +575,27 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 6685.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
 					"type": "text"
 				},
 				{
-					"buffer": 2,
-					"file": "src/extAlarmProcess_debug.ini",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 88,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								88,
-								88
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				},
-				{
 					"buffer": 3,
-					"file": "src/utils/util_timer.py",
+					"file": "src/noxAlarmProcess.py",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 1771,
+						"buffer_size": 12967,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								640,
-								640
+								9171,
+								9171
 							]
 						],
 						"settings":
@@ -534,27 +605,84 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 4070.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 0,
 					"type": "text"
 				},
 				{
 					"buffer": 4,
-					"file": "src/web/views/nox.py",
+					"file": "docs/software.md",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 2702,
+						"buffer_size": 2498,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								1924,
+								1924
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "docs/dev_workflow.md",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1860,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								354,
+								354
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "src/config.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2242,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1435,
+								1435
 							]
 						],
 						"settings":
@@ -571,20 +699,84 @@
 					"type": "text"
 				},
 				{
-					"buffer": 5,
-					"file": "src/web/views/ext.py",
+					"buffer": 7,
+					"file": "src/web/templates/_ext-panel.html.j2",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 2273,
+						"buffer_size": 2459,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								483,
-								483
+								1154,
+								1154
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 8,
+					"file": "src/web/templates/_navbar.html.j2",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 2354,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				}
+			]
+		},
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 9,
+					"file": "src/web/views/nox.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2702,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2702,
+								2702
 							]
 						],
 						"settings":
@@ -594,10 +786,10 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 421.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 5,
+					"stack_index": 7,
 					"type": "text"
 				}
 			]
@@ -605,7 +797,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 39.0
+		"height": 29.0
 	},
 	"input":
 	{
@@ -620,11 +812,18 @@
 				0,
 				1,
 				1
+			],
+			[
+				1,
+				0,
+				2,
+				1
 			]
 		],
 		"cols":
 		[
 			0.0,
+			0.830294287931,
 			1.0
 		],
 		"rows":
@@ -646,7 +845,7 @@
 	"project": "home_alarm.sublime-project",
 	"replace":
 	{
-		"height": 76.0
+		"height": 54.0
 	},
 	"save_all_on_build": true,
 	"select_file":
@@ -688,7 +887,7 @@
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 179.0,
+	"side_bar_width": 299.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

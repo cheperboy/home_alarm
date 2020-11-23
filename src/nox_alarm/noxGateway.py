@@ -84,7 +84,8 @@ class ThreadNoxAlarmGateway(Thread):
             elif (topic == zmq_socket_config.TOPIC_EVENT):
                 logger.debug('Noxalarm gateway forwading state %s' %(message))
                 date = datetime.now().strftime("%d/%m %H:%M")
-                self.socketio.emit('noxalarmevent', {'alarm_event': message, 'date': date, 'user': '-'}, namespace='/noxalarm')
+                self.socketio.emit('noxalarmevent', {'alarm_event': message, 'scope': 'nox', 'date': date, 'user': '-'}, 
+                                                        namespace='/noxalarm')
                 
         # No command received, do nothing
         except zmq.error.Again:

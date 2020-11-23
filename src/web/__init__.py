@@ -95,8 +95,8 @@ def register_callbacks(app):
         return response
 
 def register_blueprints(app):
-    app.logger.debug("PANEL_NOX {}".format(app.config['PANEL_NOX']))
-    app.logger.debug("PANEL_EXT {}".format(app.config['PANEL_EXT']))
+    # app.logger.debug("PANEL_NOX {}".format(app.config['PANEL_NOX']))
+    # app.logger.debug("PANEL_EXT {}".format(app.config['PANEL_EXT']))
     from .views.alarms_panel import alarms_panel as panel_bp
     from .views.nox import nox as nox_bp
     from .views.login import login as login_bp

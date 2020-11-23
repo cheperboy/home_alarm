@@ -46,9 +46,10 @@ from ext_alarm import zmq_socket_config
 UNIPI_IO_CONFIG = join(conf_path, 'software', 'nox_unipi_io.json')
 
 #DEBUG = None
-DEBUG = True
+DEBUG                          = True  # Should be False in production.
+DEBUG_READ_INPUT_FROM_INI_FILE = False  # Should be False in production.
 
-BIND_TO_NOX = True # None / True. bind start/stop to NoxAlarm status
+BIND_TO_NOX = True # None / True. bind start/stop to NoxAlarm status. should be True in production.
 
 class ExtAlarm(object):
   """ La class ExtAlarm est une machine à état qui vérifie l'état dedes détecteurs.
@@ -74,9 +75,9 @@ class ExtAlarm(object):
   name        = 'Ext'
   cycle_delay = 1    # While Loop cycle delay
   state_requested    = None # Record the state On/Off requested by user
-  timer_waitout      = Countdown("wait_out", 2)
-  timer_light_garage = Countdown("light_garage", 10)
-  timer_alert        = Countdown("alert", 10)
+  timer_waitout      = Countdown("wait_out", 60*2)
+  timer_light_garage = Countdown("light_garage", 60*4)
+  timer_alert        = Countdown("alert", 60*6)
 
 
   # --- Init functions ---
@@ -199,76 +200,7 @@ class ExtAlarm(object):
     msg = 'exit'
     if exit_now: sys.exit() # exit here
     else: self.run = False  # exit after end of current loop
-
-
-  # --- Handle commands from web App ---
-  def start_alarm(self):
-    """ Command to start alarm. """
-    self.state_requested = 1
     
-  def stop_alarm(self):
-    """ Command to stop alarm. """
-    self.state_requested = 0
-
-    
-  # --- StateMachine Callbacks (Actions on state change) ---
-  def leave_init(self):
-    """ From state init to any other state
-    This is not a callback (called manually)
-    """
-    msg = 'init (state: {})'.format(self.state)
-    logger.info(msg)
-    event = 'init'
-    self.push_socket_event(event)        
-    color = ExtAlarm.colors[ExtAlarm.events.index(event)]
-    self.make_DBLog('system', msg, color)
-
-  def start_delayout(self):
-    self.timer_waitout.start()
-    event = 'start_delayout'
-    logger.info('event %s' % (event))
-    self.push_socket_event(event)
-    color = ExtAlarm.colors[ExtAlarm.events.index(event)]
-    self.make_DBLog("event", event, color)
-
-  def starting(self):
-    self.timer_waitout.stop()
-    event = 'start'
-    logger.info('event %s' % (event))
-    self.push_socket_event(event)
-    color = ExtAlarm.colors[ExtAlarm.events.index(event)]
-    self.make_DBLog("event", event, color)
-
-  def stopping(self):
-    self.stop_light_garage()
-    self.stop_light_alert()
-    self.timer_waitout.stop()
-    event = 'stop'
-    logger.info('event %s' % (event))
-    self.push_socket_event(event)
-    color = ExtAlarm.colors[ExtAlarm.events.index(event)]
-    self.make_DBLog("event", event, color)
-
-  def detection(self):
-    self.start_light_garage()
-    self.start_light_alert()
-    event = 'detection'
-    logger.info('event %s' % (event))
-    self.push_socket_event(event)
-    color = ExtAlarm.colors[ExtAlarm.events.index(event)]
-    self.make_DBLog("event", event, color)
-    self.make_alert("Alert", ExtAlarm.name, event)
-
-  def serene_stop(self):
-    self.stop_light_garage()
-    self.stop_light_alert()
-    event = 'serene_stop'
-    logger.info('event %s' % (event))
-    self.push_socket_event(event)
-    color = ExtAlarm.colors[ExtAlarm.events.index(event)]
-    self.make_DBLog("event", event, color)
-    self.make_alert("Info", ExtAlarm.name, event)
-        
   @staticmethod
   def make_alert(*args):
     """ wrapper method to call mail & sms alerts """
@@ -293,33 +225,6 @@ class ExtAlarm(object):
   def push_socket_state(self):
     if DEBUG: logger.debug("Extalarm send state "+ self.state)
     self.PUB_STATE.send_string(zmq_socket_config.TOPIC_STATE + " " + self.state)
-
-  # --- Read UniPi inputs ---
-  def read_inputs(self):
-    """ Read physical IO from Unipi, update class variables. """
-    self.in_nox_alert.read()
-    self.in_nox_power.read()
-    self.in_pir_terrasse.read()
-    self.in_pir_garage.read()
-    self.out_light_terrasse.read()
-    self.out_light_garage.read()
-
-  def read_inputs_debug(self):
-    """ Read physical IO from Unipi, update class variables. """
-    # Detect ENV type from path
-    DIR          = abspath(dirname(__file__))           # /home/pi/Dev/home_alarm/src
-    CONFIG_FILE  = join(DIR, "extAlarmProcess_debug.ini")
-    # Load config file
-    if not exists(CONFIG_FILE):
-      print("Exit. Config file not found " + CONFIG_FILE)
-      exit()
-    config = configparser.ConfigParser()
-    config.read(CONFIG_FILE)
-    # declare I/O from config
-    self.in_nox_alert.value    = int(config['inputs']['in_nox_alert'])
-    self.in_nox_power.value    = int(config['inputs']['in_nox_power'])
-    self.in_pir_terrasse.value = int(config['inputs']['in_pir_terrasse'])
-    self.in_pir_garage.value   = int(config['inputs']['in_pir_garage'])
     
   def start_light_garage(self):
     """ If nox is ON and pir_garage is 1, then set light garage to ON and start timer"""
@@ -339,11 +244,111 @@ class ExtAlarm(object):
     self.out_light_terrasse.set_relay(0)
     self.timer_alert.stop()
   
+  # --- Read UniPi inputs ---
+  def read_inputs(self):
+    """ Read physical IO from Unipi, update class variables. """
+    self.in_nox_alert.read()
+    self.in_nox_power.read()
+    self.in_pir_terrasse.read()
+    self.in_pir_garage.read()
+    self.out_light_terrasse.read()
+    self.out_light_garage.read()
+
+  def read_inputs_debug(self):
+    """ Read fake IO from ini file, update class variables. """
+    DIR          = abspath(dirname(__file__))           # /home/pi/Dev/home_alarm/src
+    CONFIG_FILE  = join(DIR, "extAlarmProcess_debug.ini")
+    # Load config file
+    if not exists(CONFIG_FILE):
+      print("Exit. Config file not found " + CONFIG_FILE)
+      exit()
+    config = configparser.ConfigParser()
+    config.read(CONFIG_FILE)
+    # declare I/O from config
+    self.in_nox_alert.value    = int(config['inputs']['in_nox_alert'])
+    self.in_nox_power.value    = int(config['inputs']['in_nox_power'])
+    self.in_pir_terrasse.value = int(config['inputs']['in_pir_terrasse'])
+    self.in_pir_garage.value   = int(config['inputs']['in_pir_garage'])
+
+  def receive_request(self):
+    """ Check if a request is received and process it
+    Request can be Command (start, stop) 
+    Request can be "Status update" requested by web app 
+    """
+    # Reset flag to start/stop alarm
+    self.state_requested = None
+    try:
+      payload = self.SUB_COMMAND.recv_string(flags=zmq.NOBLOCK)
+      topic, command = payload.split()
+      if (topic == zmq_socket_config.TOPIC_REQUEST):
+        
+
+        if (command == zmq_socket_config.COMMAND_START):
+          logger.debug("Extalarm receive COMMAND_START")
+          # Set flag to stop alarm
+          self.state_requested = 1
+        
+        elif (command == zmq_socket_config.COMMAND_STOP):
+          logger.debug("Extalarm receive COMMAND_STOP")
+          # Set flag to start alarm
+          self.state_requested = 0
+        
+        elif (command == zmq_socket_config.STATUS_UPDATE):
+          logger.debug("Extalarm receive REQUEST_STATUS_UPDATE")
+          self.push_socket_state()
+    
+    # Else if no command received, do nothing
+    except zmq.error.Again:
+      pass 
+
+  def log_and_push_event(self, event):
+    logger.info('event %s' % (event))
+    self.push_socket_event(event)
+    color = ExtAlarm.colors[ExtAlarm.events.index(event)]
+    self.make_DBLog('event', event, color)
+  
+  # --- StateMachine Callbacks (Actions on state change) ---
+  def leave_init(self):
+    """ From state init to any other state
+    This is not a callback (called manually)
+    """
+    msg = 'init (state: {})'.format(self.state)
+    logger.info(msg)
+    event = 'init'
+    self.push_socket_event(event)        
+    color = ExtAlarm.colors[ExtAlarm.events.index(event)]
+    self.make_DBLog('system', msg, color)
+
+  def start_delayout(self):
+    self.timer_waitout.start()
+    self.log_and_push_event('start_delayout')
+
+  def starting(self):
+    self.timer_waitout.stop()
+    self.log_and_push_event('start')
+
+  def stopping(self):
+    self.stop_light_garage()
+    self.stop_light_alert()
+    self.timer_waitout.stop()
+    self.log_and_push_event('stop')
+
+  def detection(self):
+    self.start_light_garage()
+    self.start_light_alert()
+    self.make_alert("Alert", ExtAlarm.name, 'detection')
+    self.log_and_push_event('detection')
+
+  def serene_stop(self):
+    self.stop_light_garage()
+    self.stop_light_alert()
+    self.make_alert("Info", ExtAlarm.name, 'serene_stop')
+    self.log_and_push_event('serene_stop')
+        
   def run_states(self):
     """ Process transitions considering UniPi inputs 
     """
     if (self.state == "off"):
-      self.stop_light_garage()
       if ((BIND_TO_NOX and (self.in_nox_power.value == 1)) or (self.state_requested == 1)):
         self.off_to_waiton()
     
@@ -378,30 +383,6 @@ class ExtAlarm(object):
         self.timer_alert.stop()
         self.alert_to_on()
 
-
-  def receive_request(self):
-    """ Check if a request is received and process it
-    Request can be Command (start, stop) 
-    Request can be "Status update" requested by web app 
-    """
-    try:
-      payload = self.SUB_COMMAND.recv_string(flags=zmq.NOBLOCK)
-      topic, command = payload.split()
-      if (topic == zmq_socket_config.TOPIC_REQUEST):
-        if (command == zmq_socket_config.COMMAND_START):
-          logger.debug("Extalarm receive COMMAND_START")
-          self.start_alarm()
-        elif (command == zmq_socket_config.COMMAND_STOP):
-          logger.debug("Extalarm receive COMMAND_STOP")
-          self.stop_alarm()
-        elif (command == zmq_socket_config.STATUS_UPDATE):
-          logger.debug("Extalarm receive REQUEST_STATUS_UPDATE")
-          self.push_socket_state()
-    
-    # Else if no command received, do nothing
-    except zmq.error.Again:
-      pass 
-
       
 if __name__ == '__main__':
   """ Init ext Alarm Statemachine and run infinite loop
@@ -416,13 +397,12 @@ if __name__ == '__main__':
   while(ext.run):
     try:
       if DEBUG: logger.debug('{}'.format(ext))
-      if DEBUG:
+      if DEBUG_READ_INPUT_FROM_INI_FILE:
         ext.read_inputs_debug()
       else:
         ext.read_inputs()
       ext.run_states()
-      if not DEBUG:
-        ext.receive_request()
+      ext.receive_request()
       # Commented out : no more sent each second but on demand (when web page is loaded or on alarm state change)
       # ext.push_socket_state()
       sleep(ExtAlarm.cycle_delay)

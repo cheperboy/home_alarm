@@ -124,9 +124,10 @@ class Alarm {
 $(document).ready(function(){
 	var timer_command_ack_delay = 5*1000;	// timeout delay
 
-	var states = ['init' , 'off'     , 'on'      , 'alert'     , 'was_alert'  ];
-	var colors = ['info' , 'success' , 'primary' , 'warning'   , 'warning'    ];
-	var events = ['init' , 'stop'    , 'start'   , 'detection' , 'serene_stop'];
+	var states = ['init' , 'off'     , 'waiton'  , 'on'      , 'alert'     , 'was_alert'  ];
+
+	var colors = ['info' , 'success' , 'primary' 		  , 'primary' , 'warning'   , 'warning'    ];
+	var events = ['init' , 'stop'    , 'start_delayout'   , 'start'   , 'detection' , 'serene_stop'];
 
 	/* ----- OnClick Buttons Events -----
 	When a button is clicked: disable it and show a spinner
@@ -159,6 +160,10 @@ $(document).ready(function(){
 		ext.socket.on('extalarmevent', function(msg) {
 			console.log("Received extalarmevent " + msg.alarm_event);
 			add_event_to_table('#div_alarm_events_ext', msg);
+			// Add event to table showing all nox events and some ext events ("detection" only) 
+			if ((msg.scope == 'nox') || (msg.alarm_event == 'detection')) {
+				add_event_to_table_nox_bind('#div_alarm_events', msg)
+			}
 		});
 	}
 
@@ -185,11 +190,13 @@ $(document).ready(function(){
 		nox.socket.on('noxalarmevent', function(msg) {
 			console.log("Received noxalarmevent " + msg.alarm_event);
 			add_event_to_table('#div_alarm_events_nox', msg)
+			// Add event to table showing all nox events and some ext events ("detection" only) 
+			if ((msg.scope == 'nox') || (msg.alarm_event == 'detection')) {
+				add_event_to_table_nox_bind('#div_alarm_events', msg)
+			}
 		});
 	}
-	
-
-
+ 
 
 	/* Add a tr (event) to table
 	<tr>
@@ -205,6 +212,26 @@ $(document).ready(function(){
 		badge_class = badge_class_base + badge_class_color;
 
 		new_tr_element = '<tr><td>'+ msg.user +'</td><td>'+ msg.date +'</td>'
+		new_tr_element += '<td><span class="'+ badge_class +'">'+msg.alarm_event+'</span></td>'
+
+		tbody = $(table_div).html();
+		$(table_div).html(new_tr_element + tbody);
+    }
+	
+	/* Add a tr (event) to table
+	used for live table with nox control and ext bounded to nox
+	<tr>
+		<td>date</td>
+		<td>scope</td>
+		<td>subject <span class="badge badge-{{ log.badge }}">message</span></td>
+	*/
+	function add_event_to_table_nox_bind(table_div, msg) {
+		event_index = events.indexOf(msg.alarm_event);
+		badge_class_color = colors[event_index];
+		badge_class_base = 'badge badge-';
+		badge_class = badge_class_base + badge_class_color;
+
+		new_tr_element = '<tr><td>'+ msg.date +'</td><td>'+ msg.scope +'</td>'
 		new_tr_element += '<td><span class="'+ badge_class +'">'+msg.alarm_event+'</span></td>'
 
 		tbody = $(table_div).html();
