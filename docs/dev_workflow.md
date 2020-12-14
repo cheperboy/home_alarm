@@ -9,7 +9,12 @@ To activate virtualenv `workon dev`
 Go into dev directory `cd ~/Dev/home_alarm/src`  
 To run front-end server `python main.py`  
 To run back-end process `python extAlarmProcess.py`  
-  
+Check the debug flags in 
+- `extAlarmProcess.py`
+- `noxAlarmProcess.py`
+- `config.py`
+
+
 When running front-end this way, it uses the port defined in `config.py` (`PORT = 5000`)
 When running front-end in production mode, it uses the default port 8000 (for internal gunicorn server) and 80 for external web server.
 
