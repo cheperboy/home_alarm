@@ -18,7 +18,7 @@ greenlet==0.4.15
 gunicorn==20.0.4
 idna==2.8
 itsdangerous==1.1.0
-Jinja2==2.11.1
+Jinja2==2.11.3
 json-rpc==1.13.0
 jsonrpclib==0.1.7
 livereload==2.6.1
