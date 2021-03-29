@@ -31,7 +31,7 @@ monotonic==1.5
 nexmo==2.4.0
 nltk==3.4.5
 pycparser==2.20
-Pygments==2.6.1
+Pygments==2.7.4
 PyJWT==1.7.1
 pymdown-extensions==7.0
 python-engineio==3.11.2
