@@ -367,9 +367,9 @@ class ExtAlarm(object):
         self.on_to_alert()
 
       # special management of garage light
-      if (self.in_pir_garage.value == 1):
+      elif (self.in_pir_garage.value == 1):
         self.start_light_garage()
-      if (self.timer_light_garage.has_expired()):    
+      elif (self.timer_light_garage.has_expired()):    
         self.stop_light_garage()
     
     elif self.state == "alert":
