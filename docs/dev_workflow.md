@@ -5,6 +5,9 @@ virtualenv `dev` or `prod`
 
 
 ## Dev / Debug
+To code remotly, open vscode workspace `~/Dev/home_alarm/home_alarm.code-workspace`  
+Push updates to git (via ssh) `gitacp message`  
+Deploy to production (via ssh) ` python ~/Dev/home_alarm/src/installer.py deploy-from-dev`  
 To activate virtualenv `workon dev`  
 Go into dev directory `cd ~/Dev/home_alarm/src`  
 To run front-end server `python main.py`  
