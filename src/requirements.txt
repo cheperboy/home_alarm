@@ -49,6 +49,6 @@ transitions==0.7.2
 urllib3==1.25.8
 websocket==0.2.1
 websocket-client==0.57.0
-websockets==8.1
+websockets==9.1
 Werkzeug==0.16.1
 WTForms==2.2.1
